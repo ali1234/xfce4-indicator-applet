@@ -36,6 +36,8 @@
 #include <libxfce4util/libxfce4util.h>
 #include <libxfce4panel/xfce-panel-plugin.h>
 #include <libindicator/indicator-object.h>
+#include <libido/libido.h>
+#include <libindicator/indicator-ng.h>
 
 #include "indicator.h"
 #include "indicator-box.h"
@@ -57,6 +59,8 @@ static void             load_indicator                             (const gchar 
                                                                     IndicatorPlugin       *indicator,
                                                                     IndicatorObject *io);
 static void             load_modules                               (IndicatorPlugin       *indicator,
+                                                                    gint *indicators_loaded);
+static void             load_services                              (IndicatorPlugin *indicatorplugin,
                                                                     gint *indicators_loaded);
 static void             indicator_show_about                       (XfcePanelPlugin       *plugin);
 static void             indicator_configure_plugin                 (XfcePanelPlugin       *plugin);
@@ -312,6 +316,7 @@ indicator_construct (XfcePanelPlugin *plugin)
 
   /* load 'em */
   load_modules(indicator, &indicators_loaded);
+  load_services(indicator, &indicators_loaded);
 
   if (indicators_loaded == 0) {
     /* A label to allow for click through */
@@ -397,6 +402,38 @@ load_module (const gchar * name, IndicatorPlugin * indicator)
 }
 
 
+/* FIXME: this dir can't currently be got from pkg-config */
+#define INDICATOR_SERVICE_DIR "/usr/share/unity/indicators"
+
+static gboolean
+load_service (const gchar * name, IndicatorPlugin * indicator)
+{
+  gchar                *fullpath;
+  IndicatorNg          *io;
+  GError               *error = NULL;
+
+  g_debug("Looking at Service: %s", name);
+  g_return_val_if_fail(name != NULL, FALSE);
+
+  g_debug("Loading Service: %s", name);
+
+  fullpath = g_build_filename(INDICATOR_SERVICE_DIR, name, NULL);
+  io = indicator_ng_new_for_profile (fullpath, "desktop", &error);
+  g_free(fullpath);
+
+  if (io)
+    {
+      load_indicator(name, indicator, INDICATOR_OBJECT(io));
+      return TRUE;
+    }
+  else
+    {
+      g_clear_error (&error);
+      return FALSE;
+    }
+}
+
+
 static void
 load_indicator(const gchar * name, IndicatorPlugin * indicator, IndicatorObject * io)
 {
@@ -448,6 +485,39 @@ load_modules(IndicatorPlugin * indicator, gint * indicators_loaded)
           if (indicator_config_is_blacklisted (indicator->config, name))
             g_debug ("Excluding blacklisted module: %s", name);
           else if (load_module(name, indicator))
+            count++;
+      }
+
+    g_dir_close (dir);
+
+    *indicators_loaded += count;
+  }
+}
+
+
+static void
+load_services(IndicatorPlugin * indicator, gint * indicators_loaded)
+{
+  if (g_file_test(INDICATOR_SERVICE_DIR, (G_FILE_TEST_EXISTS | G_FILE_TEST_IS_DIR))) {
+    GDir * dir = g_dir_open(INDICATOR_SERVICE_DIR, 0, NULL);
+    gint count = 0;
+    const gchar * name;
+    if (indicator_config_get_mode_whitelist (indicator->config))
+      {
+        while ((name = g_dir_read_name (dir)) != NULL)
+          if (indicator_config_is_whitelisted (indicator->config, name))
+            {
+              g_debug ("Loading whitelisted module: %s", name);
+              if (load_service(name, indicator))
+                count++;
+            }
+      }
+    else
+      {
+        while ((name = g_dir_read_name (dir)) != NULL)
+          if (indicator_config_is_blacklisted (indicator->config, name))
+            g_debug ("Excluding blacklisted module: %s", name);
+          else if (load_service(name, indicator))
             count++;
       }
 
