@@ -516,7 +516,8 @@ indicator_button_box_size_allocate (GtkWidget     *widget,
       child_allocation.y = y + (height - ICON_SIZE + 1) / 2;
       child_allocation.width = ICON_SIZE;
       child_allocation.height = ICON_SIZE;
-      gtk_widget_size_allocate (box->icon, &child_allocation);
+      if (box->icon != NULL) // is_small returns true if indicator has no label nor icon.
+        gtk_widget_size_allocate (box->icon, &child_allocation);
     }
   else if (box->icon != NULL)
     {
