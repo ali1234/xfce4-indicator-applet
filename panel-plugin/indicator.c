@@ -56,6 +56,8 @@ static gboolean         load_module                                (const gchar 
 static void             load_indicator                             (const gchar           *name,
                                                                     IndicatorPlugin       *indicator,
                                                                     IndicatorObject *io);
+static void             load_modules                               (IndicatorPlugin       *indicator,
+                                                                    gint *indicators_loaded);
 static void             indicator_show_about                       (XfcePanelPlugin       *plugin);
 static void             indicator_configure_plugin                 (XfcePanelPlugin       *plugin);
 static gboolean         indicator_size_changed                     (XfcePanelPlugin       *plugin,
@@ -309,31 +311,7 @@ indicator_construct (XfcePanelPlugin *plugin)
   gtk_widget_show(GTK_WIDGET(indicator->buttonbox));
 
   /* load 'em */
-  if (g_file_test(INDICATOR_DIR, (G_FILE_TEST_EXISTS | G_FILE_TEST_IS_DIR))) {
-    GDir * dir = g_dir_open(INDICATOR_DIR, 0, NULL);
-
-    const gchar * name;
-    if (indicator_config_get_mode_whitelist (indicator->config))
-      {
-        while ((name = g_dir_read_name (dir)) != NULL)
-          if (indicator_config_is_whitelisted (indicator->config, name))
-            {
-              g_debug ("Loading whitelisted module: %s", name);
-              if (load_module(name, indicator))
-                indicators_loaded++;
-            }
-      }
-    else
-      {
-        while ((name = g_dir_read_name (dir)) != NULL)
-          if (indicator_config_is_blacklisted (indicator->config, name))
-            g_debug ("Excluding blacklisted module: %s", name);
-          else if (load_module(name, indicator))
-            indicators_loaded++;
-      }
-
-    g_dir_close (dir);
-  }
+  load_modules(indicator, &indicators_loaded);
 
   if (indicators_loaded == 0) {
     /* A label to allow for click through */
@@ -444,6 +422,39 @@ load_indicator(const gchar * name, IndicatorPlugin * indicator, IndicatorObject 
     }
 
   g_list_free(entries);
+}
+
+
+static void
+load_modules(IndicatorPlugin * indicator, gint * indicators_loaded)
+{
+  if (g_file_test(INDICATOR_DIR, (G_FILE_TEST_EXISTS | G_FILE_TEST_IS_DIR))) {
+    GDir * dir = g_dir_open(INDICATOR_DIR, 0, NULL);
+    gint count = 0;
+    const gchar * name;
+    if (indicator_config_get_mode_whitelist (indicator->config))
+      {
+        while ((name = g_dir_read_name (dir)) != NULL)
+          if (indicator_config_is_whitelisted (indicator->config, name))
+            {
+              g_debug ("Loading whitelisted module: %s", name);
+              if (load_module(name, indicator))
+                count++;
+            }
+      }
+    else
+      {
+        while ((name = g_dir_read_name (dir)) != NULL)
+          if (indicator_config_is_blacklisted (indicator->config, name))
+            g_debug ("Excluding blacklisted module: %s", name);
+          else if (load_module(name, indicator))
+            count++;
+      }
+
+    g_dir_close (dir);
+
+    *indicators_loaded += count;
+  }
 }
 
 
