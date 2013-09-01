@@ -53,6 +53,9 @@ static void             indicator_construct                        (XfcePanelPlu
 static void             indicator_free                             (XfcePanelPlugin       *plugin);
 static gboolean         load_module                                (const gchar           *name,
                                                                     IndicatorPlugin       *indicator);
+static void             load_indicator                             (const gchar           *name,
+                                                                    IndicatorPlugin       *indicator,
+                                                                    IndicatorObject *io);
 static void             indicator_show_about                       (XfcePanelPlugin       *plugin);
 static void             indicator_configure_plugin                 (XfcePanelPlugin       *plugin);
 static gboolean         indicator_size_changed                     (XfcePanelPlugin       *plugin,
@@ -398,8 +401,6 @@ load_module (const gchar * name, IndicatorPlugin * indicator)
 {
   gchar                *fullpath;
   IndicatorObject      *io;
-  GList                *entries, *entry;
-  IndicatorObjectEntry *entrydata;
 
   g_debug("Looking at Module: %s", name);
   g_return_val_if_fail(name != NULL, FALSE);
@@ -409,11 +410,23 @@ load_module (const gchar * name, IndicatorPlugin * indicator)
 
   g_debug("Loading Module: %s", name);
 
-  indicator_config_add_known_indicator (indicator->config, name);
-
   fullpath = g_build_filename(INDICATOR_DIR, name, NULL);
   io = indicator_object_new_from_file(fullpath);
   g_free(fullpath);
+
+  load_indicator(name, indicator, io);
+  return TRUE;
+}
+
+
+static void
+load_indicator(const gchar * name, IndicatorPlugin * indicator, IndicatorObject * io)
+{
+  GList                *entries, *entry;
+  IndicatorObjectEntry *entrydata;
+
+  indicator_config_add_known_indicator (indicator->config, name);
+
   g_object_set_data (G_OBJECT (io), "io-name", g_strdup (name));
 
   g_signal_connect(G_OBJECT(io), INDICATOR_OBJECT_SIGNAL_ENTRY_ADDED,
@@ -431,8 +444,6 @@ load_module (const gchar * name, IndicatorPlugin * indicator)
     }
 
   g_list_free(entries);
-
-  return TRUE;
 }
 
 
