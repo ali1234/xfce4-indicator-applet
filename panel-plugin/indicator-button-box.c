@@ -373,11 +373,11 @@ indicator_button_box_is_small (IndicatorButtonBox *box)
       box->pixbuf_w = gdk_pixbuf_get_width (pixbuf);
       box->pixbuf_h = gdk_pixbuf_get_height (pixbuf);
 
-      box->is_small = (box->pixbuf_w == box->pixbuf_h);
+      box->is_small = FALSE;
     }
   else
     {
-      box->is_small = TRUE;
+      box->is_small = FALSE;
     }
 
   box->cached = TRUE;
@@ -409,11 +409,11 @@ indicator_button_box_get_preferred_width (GtkWidget *widget,
           min_size = min_size + ICON_SIZE + SPACING;
           nat_size = nat_size + ICON_SIZE + SPACING;
         }
-      else
-        {
-          min_size = MAX (min_size, ICON_SIZE);
-          nat_size = MAX (nat_size, ICON_SIZE);
-        }
+//      else if (box->orientation == GTK_ORIENTATION_VERTICAL)
+//        {
+//          min_size = MAX (min_size, ICON_SIZE);
+//          nat_size = MAX (nat_size, ICON_SIZE);
+//        }
     }
   else // rectangular icon
     {
@@ -462,11 +462,11 @@ indicator_button_box_get_preferred_height (GtkWidget *widget,
           min_size = min_size + ICON_SIZE + SPACING;
           nat_size = nat_size + ICON_SIZE + SPACING;
         }
-      else
-        {
-          min_size = MAX (min_size, ICON_SIZE);
-          nat_size = MAX (nat_size, ICON_SIZE);
-        }
+//      else
+//        {
+//          min_size = MAX (min_size, ICON_SIZE);
+//          nat_size = MAX (nat_size, ICON_SIZE);
+//        }
     }
   else // rectangular icon
     {
@@ -557,9 +557,9 @@ indicator_button_box_size_allocate (GtkWidget     *widget,
           else
             {
               child_allocation.x = x;
-              child_allocation.width  = MAX (ICON_SIZE, MIN (width, label_width));
+              child_allocation.width  = MAX (1, MIN (width, label_width));
             }
-          child_allocation.height = MAX (ICON_SIZE, MIN (height, label_height));
+          child_allocation.height = MAX (1, MIN (height, label_height));
           child_allocation.y = y + (height - child_allocation.height + 1) / 2;
         }
       else
@@ -571,10 +571,10 @@ indicator_button_box_size_allocate (GtkWidget     *widget,
             }
           else
             {
-              child_allocation.height = MAX (ICON_SIZE, MIN (height, label_height));
+              child_allocation.height = MAX (1, MIN (height, label_height));
               child_allocation.y = y + (height - child_allocation.height + 1) / 2;
             }
-          child_allocation.width  = MAX (ICON_SIZE, MIN (width, label_width));
+          child_allocation.width  = MAX (1, MIN (width, label_width));
           child_allocation.x = x + (width - child_allocation.width + 1) / 2;
         }
       gtk_widget_size_allocate (box->label, &child_allocation);
