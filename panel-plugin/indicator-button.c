@@ -119,6 +119,7 @@ xfce_indicator_button_init (XfceIndicatorButton *button)
   button->menu = NULL;
 
   button->align_box = gtk_alignment_new (0.5, 0.5, 1.0, 1.0);
+  gtk_widget_set_valign (GTK_WIDGET(button->align_box), GTK_ALIGN_CENTER);
   gtk_container_add (GTK_CONTAINER (button), button->align_box);
   gtk_widget_show (button->align_box);
 }
